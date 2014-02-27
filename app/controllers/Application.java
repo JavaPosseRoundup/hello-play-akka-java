@@ -1,0 +1,37 @@
+package controllers;
+
+import actors.TwitterActor;
+import akka.actor.ActorRef;
+import akka.actor.Props;
+import akka.japi.Function;
+import play.libs.Akka;
+import play.libs.F;
+import play.mvc.Controller;
+import play.mvc.Result;
+import akka.pattern.Patterns;
+import scala.Function1;
+import scala.concurrent.Future;
+import scala.runtime.AbstractFunction1;
+
+public class Application extends Controller {
+    
+    static final ActorRef twitterPool = Akka.system().actorOf(Props.create(TwitterActor.class), "twitterSearchRouter");
+    
+    public static Result index() {
+        return ok(views.html.index.render("Hello Play Framework"));
+    }
+    
+    public static F.Promise<Result> searchTwitter(String query) {
+        
+        Future<Object> response = Patterns.ask(twitterPool, new TwitterActor.Search(query), 10000);
+        
+        Future<Result> resultFuture = response.map(new AbstractFunction1<Object, Result>() {
+            public Result apply(Object response) {
+                return ok("hello");
+            }
+        }, Akka.system().dispatcher());
+
+        return F.Promise.wrap(resultFuture);
+    }
+    
+}
