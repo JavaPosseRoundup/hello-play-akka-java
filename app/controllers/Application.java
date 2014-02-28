@@ -4,6 +4,7 @@ import actors.TwitterActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.Function;
+import akka.routing.FromConfig;
 import play.libs.Akka;
 import play.libs.F;
 import play.mvc.Controller;
@@ -15,7 +16,9 @@ import scala.runtime.AbstractFunction1;
 
 public class Application extends Controller {
     
-    static final ActorRef twitterPool = Akka.system().actorOf(Props.create(TwitterActor.class), "twitterSearchRouter");
+    static final ActorRef twitterPool = Akka.system().actorOf(
+            Props.create(TwitterActor.class).withRouter(
+                    new FromConfig()), "twitterpool");
     
     public static Result index() {
         return ok(views.html.index.render("Hello Play Framework"));
@@ -23,10 +26,11 @@ public class Application extends Controller {
     
     public static F.Promise<Result> searchTwitter(String query) {
         
-        Future<Object> response = Patterns.ask(twitterPool, new TwitterActor.Search(query), 10000);
+        Future<Object> twitterResultsFuture = Patterns.ask(twitterPool, new TwitterActor.Search(query), 10000);
         
-        Future<Result> resultFuture = response.map(new AbstractFunction1<Object, Result>() {
-            public Result apply(Object response) {
+        Future<Result> resultFuture = twitterResultsFuture.map(new AbstractFunction1<Object, Result>() {
+            public Result apply(Object twitterResults) {
+                
                 return ok("hello");
             }
         }, Akka.system().dispatcher());
