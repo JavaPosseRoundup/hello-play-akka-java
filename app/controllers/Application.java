@@ -18,7 +18,7 @@ public class Application extends Controller {
     
     static final ActorRef twitterPool = Akka.system().actorOf(
             Props.create(TwitterActor.class).withRouter(
-                    new FromConfig()), "twitterpool");
+                    new FromConfig()).withDispatcher("my-dispatcher"), "twitterpool");
     
     public static Result index() {
         return ok(views.html.index.render("Hello Play Framework"));
